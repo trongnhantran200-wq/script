@@ -1,4 +1,4 @@
--- Hacker Script Hub (Anti-AFK + Auto Rejoin + Auto Walk + Floating Toggle Button for Mobile)
+-- Hacker Script Hub (Anti-AFK + Auto Rejoin + Auto Walk + Minimize Feature)
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
@@ -8,34 +8,35 @@ local GuiService = game:GetService("GuiService")
 
 local LocalPlayer = Players.LocalPlayer
 local IsRejoining = false
-local AutoWalkActive = true
+local AutoWalkActive = false
+local AntiAFKActive = false
 
 -- 1. TẠO SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HackerHub_Mobile"
+ScreenGui.Name = "HackerHub_MinimizedEdition"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
--- 2. NÚT TRÒN NỔI ĐIỀU KHIỂN BẬT/TẮT MENU (DÀNH CHO ĐIỆN THOẠI)
-local ToggleCircle = Instance.new("TextButton")
-ToggleCircle.Name = "ToggleCircle"
-ToggleCircle.Size = UDim2.new(0, 45, 0, 45)
-ToggleCircle.Position = UDim2.new(0, 15, 0.4, 0)
-ToggleCircle.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-ToggleCircle.BorderColor3 = Color3.fromRGB(0, 255, 65)
-ToggleCircle.BorderSizePixel = 2
-ToggleCircle.Text = "HUB"
-ToggleCircle.TextColor3 = Color3.fromRGB(0, 255, 65)
-ToggleCircle.TextSize = 12
-ToggleCircle.Font = Enum.Font.Code
-ToggleCircle.Active = true
-ToggleCircle.Draggable = true -- Cho phép kéo thả nút quanh màn hình
-ToggleCircle.Parent = ScreenGui
+-- 2. Ô ICON BẰNG NÚT NHỎ KHI THU NHỎ (MINIMIZED ICON)
+local MiniIcon = Instance.new("TextButton")
+MiniIcon.Name = "MiniIcon"
+MiniIcon.Size = UDim2.new(0, 40, 0, 40)
+MiniIcon.Position = UDim2.new(0, 15, 0.4, 0)
+MiniIcon.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+MiniIcon.BorderColor3 = Color3.fromRGB(0, 255, 65)
+MiniIcon.BorderSizePixel = 2
+MiniIcon.Text = "HUB"
+MiniIcon.TextColor3 = Color3.fromRGB(0, 255, 65)
+MiniIcon.TextSize = 12
+MiniIcon.Font = Enum.Font.Code
+MiniIcon.Visible = false -- Ban đầu ẩn, chỉ hiện khi thu nhỏ
+MiniIcon.Active = true
+MiniIcon.Draggable = true -- Có thể kéo thả trên màn hình
+MiniIcon.Parent = ScreenGui
 
--- Tạo góc tròn cho nút nổi
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(1, 0)
-UICorner.Parent = ToggleCircle
+local MiniCorner = Instance.new("UICorner")
+MiniCorner.CornerRadius = UDim.new(0, 8)
+MiniCorner.Parent = MiniIcon
 
 -- 3. KHUNG LOADING SCREEN
 local LoadingFrame = Instance.new("Frame")
@@ -60,7 +61,7 @@ local LoadStatus = Instance.new("TextLabel")
 LoadStatus.Size = UDim2.new(1, 0, 0, 20)
 LoadStatus.Position = UDim2.new(0, 0, 0, 35)
 LoadStatus.BackgroundTransparency = 1
-LoadStatus.Text = "Loading modules... 0%"
+LoadStatus.Text = "Fixing Anti-AFK engine... 0%"
 LoadStatus.TextColor3 = Color3.fromRGB(0, 200, 0)
 LoadStatus.TextSize = 11
 LoadStatus.Font = Enum.Font.Code
@@ -92,8 +93,9 @@ MainFrame.Draggable = true
 MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
 
+-- Tiêu đề
 local HubTitle = Instance.new("TextLabel")
-HubTitle.Size = UDim2.new(1, -30, 0, 30)
+HubTitle.Size = UDim2.new(1, -60, 0, 30)
 HubTitle.BackgroundColor3 = Color3.fromRGB(0, 30, 0)
 HubTitle.BorderColor3 = Color3.fromRGB(0, 255, 65)
 HubTitle.Text = "[ HACKER UTILITY HUB ]"
@@ -102,7 +104,19 @@ HubTitle.TextSize = 12
 HubTitle.Font = Enum.Font.Code
 HubTitle.Parent = MainFrame
 
--- Nút Thu Nỏ Menu [X]
+-- Nút Thu Nhỏ [-]
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+MinimizeBtn.Position = UDim2.new(1, -60, 0, 0)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(0, 40, 40)
+MinimizeBtn.BorderColor3 = Color3.fromRGB(0, 255, 65)
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
+MinimizeBtn.TextSize = 14
+MinimizeBtn.Font = Enum.Font.Code
+MinimizeBtn.Parent = MainFrame
+
+-- Nút Đóng [X]
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -30, 0, 0)
@@ -114,13 +128,13 @@ CloseBtn.TextSize = 12
 CloseBtn.Font = Enum.Font.Code
 CloseBtn.Parent = MainFrame
 
--- Nút Anti-AFK Trạng Thái
+-- Nút Bật/Tắt Anti-AFK
 local AfkBtn = Instance.new("TextButton")
 AfkBtn.Size = UDim2.new(0.9, 0, 0, 35)
 AfkBtn.Position = UDim2.new(0.05, 0, 0, 40)
 AfkBtn.BackgroundColor3 = Color3.fromRGB(0, 40, 0)
 AfkBtn.BorderColor3 = Color3.fromRGB(0, 255, 65)
-AfkBtn.Text = "> ANTI-AFK & REJOIN: [ACTIVE]"
+AfkBtn.Text = "> ANTI-AFK: [ACTIVE]"
 AfkBtn.TextColor3 = Color3.fromRGB(0, 255, 65)
 AfkBtn.TextSize = 11
 AfkBtn.Font = Enum.Font.Code
@@ -150,15 +164,23 @@ RejoinBtn.TextSize = 11
 RejoinBtn.Font = Enum.Font.Code
 RejoinBtn.Parent = MainFrame
 
--- 5. XỬ LÝ SỰ KIỆN NÚT NỔI & NÚT [X]
--- Bấm nút tròn HUB để ẩn / hiện menu
-ToggleCircle.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
+-- 5. XỬ LÝ CHỨC NĂNG THU NHỎ / BẬT MỞ MENU
+-- Bấm [-] để thu nhỏ thành ô icon "HUB"
+MinimizeBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniIcon.Visible = true
 end)
 
--- Bấm nút X để ẩn menu
+-- Bấm vào ô icon "HUB" để mở lại bảng menu chính
+MiniIcon.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniIcon.Visible = false
+end)
+
+-- Bấm [X] để đóng hẳn giao diện (vẫn hiện ô nhỏ để mở lại nếu muốn)
 CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
+    MiniIcon.Visible = true
 end)
 
 -- 6. TÍNH NĂNG CHẠY NGẦM
@@ -174,13 +196,27 @@ local function AutoRejoin()
     end
 end
 
--- Chống AFK
+-- Chống AFK hoàn chỉnh (Cơ chế VirtualUser)
 LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new(0, 0))
+    if AntiAFKActive then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new(0, 0))
+    end
 end)
 
--- Auto Walk
+-- Bật / Tắt Anti-AFK
+AfkBtn.MouseButton1Click:Connect(function()
+    AntiAFKActive = not AntiAFKActive
+    if AntiAFKActive then
+        AfkBtn.Text = "> ANTI-AFK: [ACTIVE]"
+        AfkBtn.TextColor3 = Color3.fromRGB(0, 255, 65)
+    else
+        AfkBtn.Text = "> ANTI-AFK: [DISABLED]"
+        AfkBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+    end
+end)
+
+-- Auto Walk vòng lặp nhỏ
 task.spawn(function()
     while true do
         task.wait(10)
@@ -208,6 +244,7 @@ RejoinBtn.MouseButton1Click:Connect(function()
     AutoRejoin()
 end)
 
+-- Auto Rejoin khi mất kết nối
 GuiService.ErrorMessageChanged:Connect(function()
     AutoRejoin()
 end)
@@ -220,9 +257,9 @@ end)
 -- 7. LOADING ANIMATION
 task.spawn(function()
     local steps = {
-        {p = 0.4, t = "Connecting... 40%"},
-        {p = 0.8, t = "Preparing Mobile UI... 80%"},
-        {p = 1.0, t = "Ready! Tap 'HUB' to toggle 100%"}
+        {p = 0.4, t = "Fixing Anti-AFK... 40%"},
+        {p = 0.8, t = "Loading Minimize Module... 80%"},
+        {p = 1.0, t = "System Ready! Tap '-' to minimize 100%"}
     }
     
     for _, step in ipairs(steps) do
