@@ -1,4 +1,4 @@
--- Hacker Script Hub with Loading Screen
+-- Hacker Script Hub with Loading Screen (No FPS Boost)
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
@@ -36,7 +36,7 @@ local LoadStatus = Instance.new("TextLabel")
 LoadStatus.Size = UDim2.new(1, 0, 0, 20)
 LoadStatus.Position = UDim2.new(0, 0, 0, 35)
 LoadStatus.BackgroundTransparency = 1
-LoadStatus.Text = "Bypassing anti-cheat... 0%"
+LoadStatus.Text = "Loading modules... 0%"
 LoadStatus.TextColor3 = Color3.fromRGB(0, 200, 0)
 LoadStatus.TextSize = 11
 LoadStatus.Font = Enum.Font.Code
@@ -56,17 +56,17 @@ BarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 65)
 BarFill.BorderSizePixel = 0
 BarFill.Parent = BarBackground
 
--- 3. KHUNG GIAO DIỆN CHÍNH (MAIN HUB) - ẨN LÚC ĐẦU
+-- 3. KHUNG GIAO DIỆN CHÍNH (MAIN HUB)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 340, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -170, 0.4, -100)
+MainFrame.Size = UDim2.new(0, 340, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -170, 0.4, -75)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.BorderColor3 = Color3.fromRGB(0, 255, 65)
 MainFrame.BorderSizePixel = 2
 MainFrame.Active = true
 MainFrame.Draggable = true
-MainFrame.Visible = false -- Ẩn cho tới khi load xong
+MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
 
 local HubTitle = Instance.new("TextLabel")
@@ -103,18 +103,6 @@ RejoinBtn.TextSize = 11
 RejoinBtn.Font = Enum.Font.Code
 RejoinBtn.Parent = MainFrame
 
--- Nút Tối Ưu FPS
-local FpsBtn = Instance.new("TextButton")
-FpsBtn.Size = UDim2.new(0.9, 0, 0, 35)
-FpsBtn.Position = UDim2.new(0.05, 0, 0, 140)
-FpsBtn.BackgroundColor3 = Color3.fromRGB(0, 40, 0)
-FpsBtn.BorderColor3 = Color3.fromRGB(0, 255, 65)
-FpsBtn.Text = "> BOOST FPS (LOW GRAPHICS)"
-FpsBtn.TextColor3 = Color3.fromRGB(0, 255, 65)
-FpsBtn.TextSize = 11
-FpsBtn.Font = Enum.Font.Code
-FpsBtn.Parent = MainFrame
-
 -- 4. TÍNH NĂNG XỬ LÝ
 -- Chống AFK
 LocalPlayer.Idled:Connect(function()
@@ -127,32 +115,21 @@ RejoinBtn.MouseButton1Click:Connect(function()
     TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
 
--- Boost FPS
-FpsBtn.MouseButton1Click:Connect(function()
-    for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.SmoothPlastic
-        end
-    end
-    FpsBtn.Text = "> BOOST FPS [ENABLED]"
-end)
-
 -- 5. CHẠY MÀN HÌNH LOADING ANIMATION
 task.spawn(function()
     local steps = {
-        {p = 0.2, t = "Connecting to Core... 20%"},
-        {p = 0.5, t = "Loading Anti-AFK module... 50%"},
-        {p = 0.8, t = "Injecting UI Components... 80%"},
+        {p = 0.3, t = "Connecting to Core... 30%"},
+        {p = 0.7, t = "Loading Anti-AFK module... 70%"},
         {p = 1.0, t = "System Ready! 100%"}
     }
     
     for _, step in ipairs(steps) do
         LoadStatus.Text = step.t
-        TweenService:Create(BarFill, TweenInfo.new(0.5), {Size = UDim2.new(step.p, 0, 1, 0)}):Play()
-        task.wait(0.6)
+        TweenService:Create(BarFill, TweenInfo.new(0.4), {Size = UDim2.new(step.p, 0, 1, 0)}):Play()
+        task.wait(0.5)
     end
     
-    task.wait(0.3)
-    LoadingFrame:Destroy() -- Xóa bảng loading
-    MainFrame.Visible = true -- Hiện bảng chính
+    task.wait(0.2)
+    LoadingFrame:Destroy()
+    MainFrame.Visible = true
 end)
