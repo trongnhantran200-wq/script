@@ -1,11 +1,15 @@
--- Hacker Script Hub with Loading Screen (No FPS Boost)
+-- Hacker Script Hub (Anti-AFK + Auto Rejoin + Auto Walk + Toggle Key)
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
+local IsRejoining = false
+local AutoWalkActive = true
 
 -- 1. TẠO SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -59,8 +63,8 @@ BarFill.Parent = BarBackground
 -- 3. KHUNG GIAO DIỆN CHÍNH (MAIN HUB)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 340, 0, 150)
-MainFrame.Position = UDim2.new(0.5, -170, 0.4, -75)
+MainFrame.Size = UDim2.new(0, 340, 0, 190)
+MainFrame.Position = UDim2.new(0.5, -170, 0.4, -95)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.BorderColor3 = Color3.fromRGB(0, 255, 65)
 MainFrame.BorderSizePixel = 2
@@ -70,7 +74,7 @@ MainFrame.Visible = false
 MainFrame.Parent = ScreenGui
 
 local HubTitle = Instance.new("TextLabel")
-HubTitle.Size = UDim2.new(1, 0, 0, 30)
+HubTitle.Size = UDim2.new(1, -30, 0, 30)
 HubTitle.BackgroundColor3 = Color3.fromRGB(0, 30, 0)
 HubTitle.BorderColor3 = Color3.fromRGB(0, 255, 65)
 HubTitle.Text = "[ HACKER UTILITY HUB v1.0 ]"
@@ -79,48 +83,131 @@ HubTitle.TextSize = 12
 HubTitle.Font = Enum.Font.Code
 HubTitle.Parent = MainFrame
 
--- Nút Anti-AFK
+-- Nút Tắt/Mở Giao Diện [X]
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+CloseBtn.BorderColor3 = Color3.fromRGB(0, 255, 65)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+CloseBtn.TextSize = 12
+CloseBtn.Font = Enum.Font.Code
+CloseBtn.Parent = MainFrame
+
+-- Nút Anti-AFK & Auto-Rejoin Status
 local AfkBtn = Instance.new("TextButton")
 AfkBtn.Size = UDim2.new(0.9, 0, 0, 35)
-AfkBtn.Position = UDim2.new(0.05, 0, 0, 50)
+AfkBtn.Position = UDim2.new(0.05, 0, 0, 40)
 AfkBtn.BackgroundColor3 = Color3.fromRGB(0, 40, 0)
 AfkBtn.BorderColor3 = Color3.fromRGB(0, 255, 65)
-AfkBtn.Text = "> EXECUTE ANTI-AFK [ACTIVE]"
+AfkBtn.Text = "> ANTI-AFK & AUTO-REJOIN: [ACTIVE]"
 AfkBtn.TextColor3 = Color3.fromRGB(0, 255, 65)
 AfkBtn.TextSize = 11
 AfkBtn.Font = Enum.Font.Code
 AfkBtn.Parent = MainFrame
 
--- Nút Rejoin Server
+-- Nút Bật/Tắt Auto Walk (Tự động đi lại)
+local WalkBtn = Instance.new("TextButton")
+WalkBtn.Size = UDim2.new(0.9, 0, 0, 35)
+WalkBtn.Position = UDim2.new(0.05, 0, 0, 85)
+WalkBtn.BackgroundColor3 = Color3.fromRGB(0, 40, 0)
+WalkBtn.BorderColor3 = Color3.fromRGB(0, 255, 65)
+WalkBtn.Text = "> AUTO WALK (ANTI-AFK+): [ON]"
+WalkBtn.TextColor3 = Color3.fromRGB(0, 255, 65)
+WalkBtn.TextSize = 11
+WalkBtn.Font = Enum.Font.Code
+WalkBtn.Parent = MainFrame
+
+-- Nút Rejoin Thủ Công
 local RejoinBtn = Instance.new("TextButton")
 RejoinBtn.Size = UDim2.new(0.9, 0, 0, 35)
-RejoinBtn.Position = UDim2.new(0.05, 0, 0, 95)
+RejoinBtn.Position = UDim2.new(0.05, 0, 0, 130)
 RejoinBtn.BackgroundColor3 = Color3.fromRGB(0, 40, 0)
 RejoinBtn.BorderColor3 = Color3.fromRGB(0, 255, 65)
-RejoinBtn.Text = "> REJOIN CURRENT SERVER"
+RejoinBtn.Text = "> FORCE REJOIN NOW (PRESS 'K' TO HIDE)"
 RejoinBtn.TextColor3 = Color3.fromRGB(0, 255, 65)
-RejoinBtn.TextSize = 11
+RejoinBtn.TextSize = 10
 RejoinBtn.Font = Enum.Font.Code
 RejoinBtn.Parent = MainFrame
 
--- 4. TÍNH NĂNG XỬ LÝ
+-- 4. HÀM TỰ ĐỘNG REJOIN AN TOÀN
+local function AutoRejoin()
+    if IsRejoining then return end
+    IsRejoining = true
+    task.wait(2)
+    
+    if #Players:GetPlayers() <= 1 then
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    else
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+    end
+end
+
+-- 5. TÍNH NĂNG XỬ LÝ
 -- Chống AFK
 LocalPlayer.Idled:Connect(function()
     VirtualUser:CaptureController()
     VirtualUser:ClickButton2(Vector2.new(0, 0))
 end)
 
--- Rejoin
-RejoinBtn.MouseButton1Click:Connect(function()
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+-- Vòng lặp Auto Walk (Nhân vật di chuyển nhẹ để qua mặt Anti-Cheat)
+task.spawn(function()
+    while true do
+        task.wait(10)
+        if AutoWalkActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            local humanoid = LocalPlayer.Character.Humanoid
+            humanoid:Move(Vector3.new(1, 0, 0), true)
+            task.wait(0.5)
+            humanoid:Move(Vector3.new(-1, 0, 0), true)
+        end
+    end
 end)
 
--- 5. CHẠY MÀN HÌNH LOADING ANIMATION
+-- Bật/Tắt Auto Walk
+WalkBtn.MouseButton1Click:Connect(function()
+    AutoWalkActive = not AutoWalkActive
+    if AutoWalkActive then
+        WalkBtn.Text = "> AUTO WALK (ANTI-AFK+): [ON]"
+        WalkBtn.TextColor3 = Color3.fromRGB(0, 255, 65)
+    else
+        WalkBtn.Text = "> AUTO WALK (ANTI-AFK+): [OFF]"
+        WalkBtn.TextColor3 = Color3.fromRGB(255, 50, 50)
+    end
+end)
+
+-- Rejoin Thủ Công
+RejoinBtn.MouseButton1Click:Connect(function()
+    AutoRejoin()
+end)
+
+-- TỰ ĐỘNG REJOIN KHI BỊ DISCONNECT (Mất mạng / Kick)
+GuiService.ErrorMessageChanged:Connect(function()
+    AutoRejoin()
+end)
+
+TeleportService.TeleportInitFailed:Connect(function()
+    task.wait(1)
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+end)
+
+-- Ẩn/Hiện UI khi bấm phím K hoặc nút X
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.K then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- 6. CHẠY MÀN HÌNH LOADING ANIMATION
 task.spawn(function()
     local steps = {
         {p = 0.3, t = "Connecting to Core... 30%"},
-        {p = 0.7, t = "Loading Anti-AFK module... 70%"},
-        {p = 1.0, t = "System Ready! 100%"}
+        {p = 0.7, t = "Hooking Auto-Walk & Rejoin... 70%"},
+        {p = 1.0, t = "System Ready! Press 'K' to Hide 100%"}
     }
     
     for _, step in ipairs(steps) do
