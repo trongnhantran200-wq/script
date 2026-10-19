@@ -8,8 +8,8 @@ local GuiService = game:GetService("GuiService")
 
 local LocalPlayer = Players.LocalPlayer
 local IsRejoining = false
-local AutoWalkActive = false
-local AntiAFKActive = false
+local AutoWalkActive = true
+local AntiAFKActive = true
 
 -- 1. TẠO SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
